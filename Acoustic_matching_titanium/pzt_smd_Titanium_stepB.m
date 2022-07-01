@@ -2,7 +2,7 @@
 %Layers assumed in the current calculation: PZT- Titanium - water
 %See the paper: Titanium made ultrasonic reactor with 500KHz resonance
 %Written by Shahar Seifer
-%(C) copyright 2018, Shahar Seifer
+%(C) copyright 2019, Shahar Seifer
 
 
 %Code run once to solve symbolically the system of equations
