@@ -1,26 +1,28 @@
-%Analysis of different tilt increment schemes in tomography by direct algebraic reconstruction
-%Written by Shahar Seifer, Elabum lab, Weizmann Institute of Science
-%(C) Copyright, 2022
+%Written by Shahar Seifer, Elbaum lab, Weizmann Institute of Science (c)2022
+Scheme=input("Choose scheme [0: evenly spaced, 1:Saxton, 2: Revised Saxton, 3:Hoppe, 4:Evenly with cos grid, 5:Revised Saxton cos grid]: ");
+addnoise=1;
+thicksamp=1; %0, 1, 3.5
+crystal=0;
+PSF_bin=1; %20 for PSF effect; 1 for accurate infiniteseimal rays
+line_integral_bin=50; %300 for thin sample, 100 for X3 thick, 10 for square or with PSF
 
-Scheme=input("Choose scheme [0: even steps, 1:Saxton, 2: Corrected Saxton, 3:Hoppe]: ");
-addnoise=0; %0 ideal, 1 add noise to scattering field
-crystal=1; %0 for external image, 1 for crystal
-PSF_bin=1;%use 1 for accurate results (infinitesimal PSF), 20 for finite PSF
-
-if crystal==0
-    Pcol=imread('C:\Users\seifer\Documents\Matlab\weizmann_logo.png');
-    PF=Pcol(:,:,1);
-    W=256;d=25;
+if crystal==0  %concentric circles
+    W=256;d=30+thicksamp*60; 
     PF_X=(1:W);
     PF_Z=(1:d)';
-else
-    W=256;d=30;
+    [mat_x,mat_z]=meshgrid(PF_X-0.5*(1+W),PF_Z-0.5*(1+d));
+    PF=zeros(d,W);
+    for radius=4:8:d/2-4
+        PF(round(sqrt(mat_x.^2+mat_z.^2))==radius)=1;
+    end
+else %dislocated crystal
+    W=256;d=30+thicksamp*60; %thick:  30->90
     PF_X=(1:W);
     PF_Z=(1:d)';
     if true
         PF=zeros(d,W);
-        for line=1:3
-            for col=1:30
+        for line=1:(3+thicksamp*6) 
+            for col=(4+4*(thicksamp>0)):(27-4*(thicksamp>0)) 
                 x=8*col+4;
                 z=2+7*line;
                 if mod(col,8)==5 && line==2
@@ -60,14 +62,14 @@ xvect=dx*(0.5*(1-(mod(sizeNx,2)))-floor(sizeNx/2):floor(sizeNx/2)-0.5*(1-(mod(si
 zvect=dz*(0.5*(1-(mod(sizeNz,2)))-floor(sizeNz/2):floor(sizeNz/2)-0.5*(1-(mod(sizeNz,2))));
 if Scheme==1 %Original Saxton scheme
     theta_vect=[9.5 19 28 36.4 44.1 51 57 62.2 66.6 70.4 73.6 76.3 78.6 80.5];
-    theta_vect=[theta_vect(14:-1:1) 0 theta_vect];
+    theta_vect=[-theta_vect(14:-1:1) 0 theta_vect];
     thN=length(theta_vect);
     thNov2=floor((thN+1)/2);
-elseif Scheme==0 %even steps
+elseif Scheme==0 || Scheme==4 %even steps
     dtheta_deg=5.75;
     theta_vect=-80.5:dtheta_deg:80.5; %tilt angles in degrees
     thN=length(theta_vect);
-elseif Scheme==2 %corrected Saxton scheme
+elseif Scheme==2 || Scheme==5 %Revised Saxton scheme
     theta_vect=(180/pi)*asin(-sin(80.5*pi/180):sin(80.5*pi/180)/14:sin(80.5*pi/180));
     thN=length(theta_vect);
 elseif Scheme==3 %Hoppe scheme assuming sampling of projection at steps of dx*cos(theta)
@@ -86,10 +88,10 @@ NewprojN=sizeNx;
 %Point spread function of the beam
 PSFbuild=1:PSF_bin;
 if PSF_bin==1
-PSF_sim=1;
-PSF_rec=1;
+    PSF_sim=1;
+    PSF_rec=1;
 else
-    PSF_sim=exp(-((PSFbuild-0.5*(1+PSF_bin))/20).^2);%was 15
+    PSF_sim=exp(-((PSFbuild-0.5*(1+PSF_bin))/20).^2);
     PSF_rec=exp(-((PSFbuild-0.5*(1+PSF_bin))/20).^2);
 end
 dB=1/length(PSF_rec);
@@ -103,28 +105,30 @@ PFsignal=double(PF);
 RRS=zeros(thN,NewprojN);
 %simulate projection according to PSF_sim beam spread function
 index_ref_points=1:sizeNx;
-dL=dx/PSF_bin;
+dL=dx/line_integral_bin;
 for theta_idx=1:thN
     tantheta_sim=tan(theta_vect_rad(theta_idx));
     costheta_sim=cos(theta_vect_rad(theta_idx));
     sintheta_sim=sin(theta_vect_rad(theta_idx));
+    if Scheme==3 || Scheme==4 || Scheme==5
+        Wfunction_sim=costheta_sim;
+    else
+        Wfunction_sim=1;
+    end
     if PSF_bin==1
         Bvect=0;
     else
-        if Scheme==3
-            Bvect=(-0.5+((1:length(PSF_rec))-1)*1.0/length(PSF_rec))*dx; %was linspace(-0.5*dx,+0.5*dx,length(PSF_rec));
-        else
-            Bvect=(-0.5+((1:length(PSF_rec))-1)*1.0/length(PSF_rec))*dx/costheta_sim; %was  linspace(-0.5*dx/costheta_sim,+0.5*dx/costheta_sim,length(PSF_rec));
-        end
+        Bvect=(-0.5+((1:length(PSF_rec))-1)*1.0/length(PSF_rec))*dx; 
     end
     for L=-(d/2):dL:(d/2)
-        noise=1+addnoise*1.0*(rand-0.5);
+        if addnoise==0
+            factor_with_noise=1;
+        elseif mod(L+(d/2),dx)==0 
+            factor_with_noise=poissrnd(20)/20;
+        end
+        %noise=1+1.0*(rand-0.5);
         for Bidx=1:length(PSF_sim)
-            if Scheme==3
-               RRS(theta_idx,:)=RRS(theta_idx,:)+noise*dB*PSF_sim(Bidx)*dL*PFsignal(max(1,min(sizeNz,round((d/2+L+Bvect(Bidx)*sintheta_sim)/dz))),max(1,min(sizeNx,round((index_ref_points*dx+L*tantheta_sim+Bvect(Bidx)*costheta_sim)/dx))))/costheta_sim;
-            else
-               RRS(theta_idx,:)=RRS(theta_idx,:)+noise*dB*PSF_sim(Bidx)*dL*PFsignal(max(1,min(sizeNz,round((d/2+L+Bvect(Bidx)*sintheta_sim)/dz))),max(1,min(sizeNx,round((index_ref_points*dx/costheta_sim+L*tantheta_sim+Bvect(Bidx)*costheta_sim)/dx))))/costheta_sim;
-            end
+               RRS(theta_idx,:)=RRS(theta_idx,:)+factor_with_noise*dB*PSF_sim(Bidx)*dL*PFsignal(max(1,min(sizeNz,round((d/2+L)/dz))),max(1,min(sizeNx,round(0.5*(1+sizeNx)+((index_ref_points-0.5*(1+sizeNx))*dx*Wfunction_sim/costheta_sim+L*tantheta_sim+Bvect(Bidx)/costheta_sim)/dx))))/costheta_sim;
         end
     end
 end
@@ -174,24 +178,21 @@ eps2=dz*(j-0.5*d/dz)./costheta;
 
 %The S matrix of size sizeNx*sizeNz,NewprojN*thN
 TheS=zeros(sizeNx*sizeNz,NewprojN*thN);
-dL=dx/PSF_bin;
+dL=dx/line_integral_bin;
 %Bvect_aux=linspace(-0.5*dx,+0.5*dx,length(PSF_rec));
 for L=-(d/2):dL:(d/2)
     for Bidx=1:length(PSF_rec)
         if PSF_bin==1
             Bvect_Bidx=0;
         else
-            if Scheme==3
-                Bvect_Bidx=(-0.5+(Bidx-1)*1.0/length(PSF_rec))*dx;
-            else
-                Bvect_Bidx=(-0.5+(Bidx-1)*1.0/length(PSF_rec))*dx./costheta;
-            end
+            Bvect_Bidx=(-0.5+(Bidx-1)*1.0/length(PSF_rec))*dx;
         end
-        if Scheme==3
-            TheS=TheS+dB*PSF_rec(Bidx)*dL*(abs((m-i)*dx+L*tantheta+Bvect_Bidx*costheta)<=dx/2).*(abs(d/2+L-j*dz+Bvect_Bidx*sintheta)<=dz/2)./costheta;
+        if Scheme==3 || Scheme==4 || Scheme==5
+            Wfunction=costheta;
         else
-            TheS=TheS+dB*PSF_rec(Bidx)*dL*(abs((m./costheta-i)*dx+L*tantheta+Bvect_Bidx.*costheta)<=dx/2).*(abs(d/2+L-j*dz+Bvect_Bidx.*sintheta)<=dz/2)./costheta;
+            Wfunction=1;
         end
+        TheS=TheS+dB*PSF_rec(Bidx)*dL*(abs(((m-0.5*(1+sizeNx)).*(Wfunction./costheta)-(i-0.5*(1+sizeNx)))*dx+L*tantheta+Bvect_Bidx./costheta)<=dx/2).*(abs(d/2+L-j*dz)<=dz/2)./costheta;
     end
 end
 
@@ -211,51 +212,11 @@ imshow(balance_pic(Projection_expected,Nshades),cmap);
 hgca=gca;
 title(hgca,'S^**[vector of original signal]');
 
-Invmethod=1;
-if Invmethod==0 || Invmethod==1
-%method A of inversion: like pinv in matlab (Moore-Penrose Pseudoinverse)
-    if Invmethod==0
-        [svdU,sigma,svdV] = svd(TheStag); 
-    else
-        [svdU,sigma,svdV] = svd(TheStag'*TheStag); 
-    end
-    Invsigma=zeros(size(sigma));
-    maxsigma=max(max(sigma));
-    for ind=1:min(length(sigma(1,:)),length(sigma(:,1)))
-        if sigma(ind,ind)>maxsigma*10^-5
-           Invsigma(ind,ind)=1/sigma(ind,ind);
-           lastind=ind;
-        else
-           Invsigma(ind,ind)=0; 
-        end
-    end
-    if Invmethod==0
-        PseudoInvS=svdV*Invsigma'*svdU';
-    else
-        PseudoInvS=(svdV*Invsigma'*svdU')*TheStag';
-    end
-    result2=PseudoInvS*Csample;
-    reconst_map2=reshape(result2,[sizeNx,sizeNz])'; %transpose needed since reshape works by column and we like row after row.
-elseif Invmethod==2
-%Method B of inversion: Minimum norm least-squares solution
-    result2=lsqminnorm(TheStag,Csample);% pseudo solves TheS'*x=Csample,  tolerance=0.005
-    reconst_map2=reshape(result2,[sizeNx,sizeNz])'; %transpose needed since reshape works by column and we like row after row.
-elseif Invmethod==3
-%Method C of inversion: Since Rank(TheStag)=[number of columns]<[number of rows] the
-%pseudoinverse is directly calculated A^[degger]=(A^[*]*A)^[-1]*A^[*]
-    PseudoInvS=inv(TheStag'*TheStag)*TheStag';
-    result2=PseudoInvS*Csample;
-    reconst_map2=reshape(result2,[sizeNx,sizeNz])'; %transpose needed since reshape works by column and we like row after row.
-end %select method
-    
-
-figure(11);
-reconst_show2=balance_pic(abs(reconst_map2)-min(min(abs(reconst_map2))),Nshades);
-imshow(reconst_show2,cmap);
-hgca=gca;
-title(hgca,'Reconstruction according to S matrix');
-
-for do_index=1:30
+[svdU,sigma,svdV] = svd(TheStag*TheStag');
+table_err=zeros(1,20);
+table_cor=zeros(1,20);
+table_ratio=zeros(1,20);
+for do_index=1:30%1:11  3:15, 2:10, 0:10
     do_threshold=2^-do_index;
 
     Invsigma=zeros(size(sigma));
@@ -268,30 +229,35 @@ for do_index=1:30
            Invsigma(ind,ind)=0; 
         end
     end
-    PseudoInvS=(svdV*Invsigma'*svdU')*TheStag';
+    PseudoInvS=TheStag'*(svdV*Invsigma'*svdU');
     result2=PseudoInvS*Csample;
     reconst_map2=reshape(result2,[sizeNx,sizeNz])'; %transpose needed since reshape works by column and we like row after row.
     
+    plotfile='D:\results6b\reconst_scheme.bmp';
     figure(11);
     reconst_show2=balance_pic(abs(reconst_map2)-min(min(abs(reconst_map2))),Nshades);
     imshow(reconst_show2,cmap);
+    imwrite(reconst_show2/max(reconst_show2(:)),plotfile);
+    %print(gcf,plotfile,'-dbmpmono','-vector');
     hgca=gca;
     title(hgca,'Reconstruction according to S matrix');
     
     fprintf('Ratio of acounted eigenvectors=%g \n',lastind/length(Invsigma(:,1)))
     fprintf('RMS of reconstruction error: %g \n',sqrt(mean(mean((PFsignal-reconst_map2).^2)))/(max(PFsignal(:))-min(PFsignal(:))))
-    table_err(do_index)=sqrt(mean(mean((PFsignal-reconst_map2).^2)))/(max(PFsignal(:))-min(PFsignal(:)));
+    table_err(do_index)=sqrt(mean(mean((PFsignal-reconst_map2-mean(PFsignal(:)-reconst_map2(:))).^2)))/(max(PFsignal(:))-min(PFsignal(:)));
     table_cor(do_index)=mean(mean(PFsignal.*reconst_map2))/sqrt(mean(mean(PFsignal.*PFsignal))*mean(mean(reconst_map2.*reconst_map2)));
-    table_ratio(do_index)=(length(Invsigma(:,1))-lastind)/length(Invsigma(:,1));
+    table_ratio(do_index)=(lastind)/length(Invsigma(:,1));
 
 end %for do_index
 
 figure(20)
-plot(table_ratio(table_err<0.25)*100,table_err(table_err<0.25)*100,'-*');
-xlabel("Part of singular values removed [%]")
+plot(table_ratio(table_err<0.5)*100,table_err(table_err<0.5)*100,'-*');
+xlabel("Part of singular values [%]")
 ylabel("Reconstruction error [%]")
 
 figure(21)
-plot(table_ratio(table_err<0.25)*100,table_cor(table_err<0.25)*100,'-*');
-xlabel("Part of singular values removed [%]")
+plot(table_ratio(table_err<0.5)*100,table_cor(table_err<0.5)*100,'-*');
+xlabel("Part of singular values[%]")
 ylabel("Correlation original-reconstruction [%]")
+
+save(sprintf("d:\\results6b\\Scheme%d.txt",Scheme),'table_err','table_cor','table_ratio','-ascii','-tabs');
