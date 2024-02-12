@@ -51,7 +51,7 @@ end
 %SVD -> U(:,1) and U(:,2) are the most important modes (eigen vectors)
 [U,S,V] = svd(cov);
 f=diag(S);
-disp('Part of first 4 compositions in total variation: %d',sum(f(1:4))/sum(f));
+disp(sprintf('Part of first 4 compositions in total variation: %d',sum(f(1:4))/sum(f)));
 p4d1=zeros(1,1,1,16+ring17_for_haadf+ringC_included*3);
 p4d2=zeros(1,1,1,16+ring17_for_haadf+ringC_included*3);
 p4d3=zeros(1,1,1,16+ring17_for_haadf+ringC_included*3);
