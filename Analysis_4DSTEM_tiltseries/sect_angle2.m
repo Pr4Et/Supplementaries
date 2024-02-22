@@ -1,3 +1,5 @@
+%Generate orientation map from sector files
+% Written by Shahar Seifer, Elbaum lab, Weizmann Insititute of Science
 %% step1: get reconstruction data to one matrix grand_vol %%
 [filename,path] = uigetfile('Z:\shared\ArinaData\*sect1*.mrc','Fetch aligned tilt series of sect1, MRC file');
 Chosen_Filename_ch1=[path filename];
@@ -35,10 +37,6 @@ colormake(1,:)=[255 0 0];
 colormake(2,:)=[0 255 0];
 colormake(3,:)=[0 0 255];
 colormake(4,:)=[255 255 0];
-%colormake(5,:)=[255 0 255];
-%colormake(6,:)=[0 255 255];
-%colormake(7,:)=[128 128 255];
-%colormake(8,:)=[255 128 128];
 if (false) %change to true to draw colorbar
     figure(3)
     axis equal
@@ -99,9 +97,4 @@ New_Filename_tif=strrep(New_Filename,'.mrc','.tif');
 options.overwrite=true;
 options.color = true;
 saveastiff(Z_color_multiframe, New_Filename_tif, options); %External function from https://www.mathworks.com/matlabcentral/fileexchange/35684-multipage-tiff-stack
-%newmRCImage = MRCImage;%Instentiate MRCImage object
-%newmRCImage.filename=New_Filename;
-%newmRCImage = setVolume(newmRCImage, vol_angles);
-%save(newmRCImage, New_Filename);
-%close(newmRCImage);
 

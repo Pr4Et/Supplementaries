@@ -78,19 +78,19 @@ end
 
 for channel=-1:19+16
     if channel<=16 && channel>=1
-        nextfilename=strrep(Chosen_ArinaMRC1,'_ring1_reorder.mrc',sprintf('_ring%d_reorder.mrc',channel));
+        nextfilename=strrep(Chosen_ArinaMRC1,'_ring1_reorder',sprintf('_ring%d_reorder',channel));
     elseif channel==17 
-        nextfilename=strrep(Chosen_ArinaMRC1,'_ring1_reorder.mrc','_ring_iCOM_reorder.mrc');
+        nextfilename=strrep(Chosen_ArinaMRC1,'_ring1_reorder','_ring_iCOM_reorder');
     elseif channel==18 
-        nextfilename=strrep(Chosen_ArinaMRC1,'_ring1_reorder.mrc','_ring_vHAADF_reorder.mrc');
+        nextfilename=strrep(Chosen_ArinaMRC1,'_ring1_reorder','_ring_vHAADF_reorder');
     elseif channel==19 
         nextfilename=Chosen_Filename;
     elseif channel>19
-        nextfilename=strrep(Chosen_ArinaMRC1,'_ring1_reorder.mrc',sprintf('_sect%d_reorder.mrc',channel-19));
+        nextfilename=strrep(Chosen_ArinaMRC1,'_ring1_reorder',sprintf('_sect%d_reorder',channel-19));
     elseif channel==-1 
-        nextfilename=strrep(Chosen_ArinaMRC1,'_ring1_reorder.mrc','_ring_COMx_reorder.mrc');
+        nextfilename=strrep(Chosen_ArinaMRC1,'_ring1_reorder','_ring_COMx_reorder');
     elseif channel==0
-        nextfilename=strrep(Chosen_ArinaMRC1,'_ring1_reorder.mrc','_ring_COMy_reorder.mrc');
+        nextfilename=strrep(Chosen_ArinaMRC1,'_ring1_reorder','_ring_COMy_reorder');
     end
     newFilename=strrep(nextfilename,'.mrc','_preali.mrc');
     mRCImage=MRCImage;%Instentiate MRCImage in mRCImage
@@ -122,14 +122,15 @@ disp(sprintf('clusteralign_astra_reconstruct(0,90,0,''%s'',''%s'')',strrep(newFi
 
 
 
-%####################################################
 function r_mn=r_mn(Imagem,Imagen,shift_limit,do_filt)
+    margval=0.15;
+    Cmargval=1-margval;
     if do_filt==1
         Imagem=imgaussfilt(Imagem-imgaussfilt(Imagem,100),3);
         Imagen=imgaussfilt(Imagen-imgaussfilt(Imagen,100),3);
     elseif do_filt==2
-        Imagem=imgaussfilt(Imagem-imgaussfilt(Imagem,30),3);
-        Imagen=imgaussfilt(Imagen-imgaussfilt(Imagen,30),3);
+        Imagem=imgaussfilt(Imagem-imgaussfilt(Imagem,20),2); 
+        Imagen=imgaussfilt(Imagen-imgaussfilt(Imagen,20),2);
     end
     figure(2);
     subplot(1,2,1);
@@ -137,8 +138,8 @@ function r_mn=r_mn(Imagem,Imagen,shift_limit,do_filt)
     subplot(1,2,2);
     balanced_imshow(Imagen(round(0.15*size(Imagen,1)):floor(0.85*size(Imagen,1)),round(0.15*size(Imagen,2)):floor(0.85*size(Imagen,2))));
 
-    tempx=floor(0.3*size(Imagem,1));  % x are the row number, y is the col number (as observed with balanced_imshow). The rows progress along the first ordinate in Imagem/n.
-    tempy=floor(0.3*size(Imagem,2));
+    tempx=floor(margval*size(Imagem,1));  % x are the row number, y is the col number (as observed with balanced_imshow). The rows progress along the first ordinate in Imagem/n.
+    tempy=floor(margval*size(Imagem,2));
     tempux=size(Imagem,1)-tempx;%floor(0.85*size(Imagem,1));
     tempuy=size(Imagem,2)-tempy;%floor(0.7*size(Imagem,2));
     view_in=Imagem(tempx:tempux,tempy:tempuy);

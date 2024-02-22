@@ -1,8 +1,7 @@
 %Prealing all rings files after processing (by Arinatomo_rings_par)
 %and after reordering (by ring_reorder.m).
-%Written by Shahar Seifer, Elbaum lab, Weizmann Institute of Science
+%Written by Shahar Seifer, Weizmann Institute of Science, 2022
 %Requires @MRCImage library from MatTomo, PEET project: https://bio3d.colorado.edu/imod/matlab.html
-%Requires Astra toolbox https://astra-toolbox.com/downloads/index.html
 clear;
 skip_cor=0; %SKIP CROSS CORRELATION
 [tiltfile0,path]=uigetfile('Z:\shared\SavvyscanData\*.*rawtlt','Find the tilt angles file');
@@ -438,9 +437,9 @@ for channel=-1:19+16
     elseif channel>19
         nextfilename=strrep(Chosen_ArinaMRC1,'_ring1_',sprintf('_sect%d_',channel-19));
     elseif channel==-1 
-        nextfilename=strrep(Chosen_ArinaMRC1,'_ring1_reorder.mrc','_ring_COMx_reorder.mrc');
+        nextfilename=strrep(Chosen_ArinaMRC1,'_ring1_','_ring_COMx_');
     elseif channel==0
-        nextfilename=strrep(Chosen_ArinaMRC1,'_ring1_reorder.mrc','_ring_COMy_reorder.mrc');
+        nextfilename=strrep(Chosen_ArinaMRC1,'_ring1_','_ring_COMy_');
     end
     newFilename=strrep(nextfilename,'.mrc','_preali.mrc');
     mRCImage=MRCImage;%Instentiate MRCImage in mRCImage
@@ -476,8 +475,8 @@ function r_mn=r_mn(Imagem,Imagen,shift_limit,do_filt)
         Imagem=imgaussfilt(Imagem-imgaussfilt(Imagem,100),3);
         Imagen=imgaussfilt(Imagen-imgaussfilt(Imagen,100),3);
     elseif do_filt==2
-        Imagem=imgaussfilt(Imagem-imgaussfilt(Imagem,30),2);
-        Imagen=imgaussfilt(Imagen-imgaussfilt(Imagen,30),2);
+        Imagem=imgaussfilt(Imagem-imgaussfilt(Imagem,20),2); 
+        Imagen=imgaussfilt(Imagen-imgaussfilt(Imagen,20),2);
     end
     figure(2);
     subplot(1,2,1);
