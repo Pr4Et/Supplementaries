@@ -857,8 +857,8 @@ function function_rings_align(Chosen_Filename_HAADF_reorder,Chosen_Filename_ring
     nZ=400;
     do_filt=2;
     shift_limit=150;
-    phi=90;
-    psi=0;
+    phi=90*pi/180;
+    psi=0*pi/180;
     rotation_xaxis=(abs(cos(phi))<0.7);
     hoppe=0;
     cosine_sample=hoppe;
@@ -1111,8 +1111,8 @@ function function_rings_align(Chosen_Filename_HAADF_reorder,Chosen_Filename_ring
             Imagen=permute(proj_data_mat2(:,idx,:),[1 3 2]);
             shift_vect=r_mn(Imagem,Imagen,shift_limit,do_filt);
             if ~isnan(shift_vect(1)) && ~isnan(shift_vect(2))
-                shift_vecX_filt=min(max(shift_vect(1),-20),20);
-                shift_vecY_filt=min(max(shift_vect(2),-20),20);
+                shift_vecX_filt=min(max(shift_vect(1),-shift_limit),shift_limit);
+                shift_vecY_filt=min(max(shift_vect(2),-shift_limit),shift_limit);
                 shiftsX_more(idx)=shiftsX_more(idx)+shift_vecX_filt;
                 shiftsY_more(idx)=shiftsY_more(idx)+shift_vecY_filt;
             end

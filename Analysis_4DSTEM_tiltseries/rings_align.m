@@ -117,8 +117,8 @@ mrg=0.05;
 nZ=400;
 do_filt=2;
 shift_limit=150;
-phi=90;
-psi=0;
+phi=90*pi/180;
+psi=0*pi/180;
 rotation_xaxis=(abs(cos(phi))<0.7);
 hoppe=0;
 cosine_sample=hoppe;
@@ -141,7 +141,7 @@ for iteration=1:10
     proj_vectors=zeros(length(angles_rec),12);
     for idx=1:length(angles_rec)
         %assume the sample is static in axes and the entire setup rotates around it
-        %In the case of rotation around x-axis (phi=90 degrees) and psi=0 the rays are described as:  
+        %In the case of rotation around x-axis (phi=rad(90 degrees)) and psi=0 the rays are described as:  
         %rayX=0; 
         %rayY=sin(angles(idx)*pi/180);
         %rayZ=cos(angles(idx)*pi/180);
@@ -165,7 +165,7 @@ for iteration=1:10
         uX=1;    %v is for column shift of one pixel in the detector actual (1,0)
         uY=0;
         uZ=0;
-        proj_vectors(idx,:)=[rayX rayY rayZ dX dY dZ uX uY uZ vX vY vZ];
+        proj_vectors(idx,:)=[rayX rayY rayZ dX dY dZ uX uY uZ vX vY vZ];  
     end
     proj_geom = astra_create_proj_geom('parallel3d_vec',  det_row_count+2*round(mrg*nYsized), det_col_count+2*round(mrg*nXsized), proj_vectors);
     %
@@ -341,7 +341,7 @@ for iteration=1:10
     proj_data_mat2=zeros(nXsized+2*round(mrg*nXsized),length(angles_rec),nYsized+2*round(mrg*nYsized));
     
     for idx=1:length(angles_rec)
-        rayX=(1-cos(angles_rec(idx)*pi/180))*cos(psi)*sin(psi)*sin(-phi)+sin(angles_rec(idx)*pi/180)*cos(psi)*cos(-phi);
+        rayX=(1-cos(angles_rec(idx)*pi/180))*cos(psi)*sin(psi)*sin(-phi)+sin(angles_rec(idx))*cos(psi)*cos(-phi);
         rayY=(1-cos(angles_rec(idx)*pi/180))*cos(psi)*sin(psi)*cos(-phi)-sin(angles_rec(idx)*pi/180)*cos(psi)*sin(-phi);
         rayZ=cos(angles_rec(idx)*pi/180)+(1-cos(angles_rec(idx)*pi/180))*(sin(psi))^2;
     
@@ -384,8 +384,8 @@ for iteration=1:10
         Imagen=permute(proj_data_mat2(:,idx,:),[1 3 2]);
         shift_vect=r_mn(Imagem,Imagen,shift_limit,do_filt);
         if ~isnan(shift_vect(1)) && ~isnan(shift_vect(2))
-            shift_vecX_filt=min(max(shift_vect(1),-20),20);
-            shift_vecY_filt=min(max(shift_vect(2),-20),20);
+            shift_vecX_filt=min(max(shift_vect(1),-shift_limit),shift_limit);
+            shift_vecY_filt=min(max(shift_vect(2),-shift_limit),shift_limit);
             shiftsX_more(idx)=shiftsX_more(idx)+shift_vecX_filt;
             shiftsY_more(idx)=shiftsY_more(idx)+shift_vecY_filt;
         end
@@ -410,9 +410,11 @@ for iteration=1:10
 
 end %for iteration=1:1
 
-writematrix(err_vector,strrep(Chosen_Filename,'.mrc','.err.txt')); 
-writematrix(-(shiftsY'+shiftsY_more),strrep(Chosen_Filename,'.mrc','.Dy.txt')); 
-writematrix(-(shiftsX'+shiftsX_more),strrep(Chosen_Filename,'.mrc','.Dx.txt')); 
+if exist('err_vector')
+    writematrix(err_vector,strrep(Chosen_Filename,'.mrc','.err.txt')); 
+    writematrix(-(shiftsY'+shiftsY_more),strrep(Chosen_Filename,'.mrc','.Dy.txt')); 
+    writematrix(-(shiftsX'+shiftsX_more),strrep(Chosen_Filename,'.mrc','.Dx.txt')); 
+end
 %Save to new MRC names rec_...
 newFilename=strrep(Chosen_Filename,'.mrc','_preali.mrc');
 newmRCImage = MRCImage;%Instentiate MRCImage object
@@ -450,7 +452,7 @@ for channel=-1:19+16
     for ind=1:ntilts
         im=tilt(:,:,ind);
         fillmean(ind)=median(im(:));
-        newtilt(:,:,ind)=imtranslate(tilt(:,:,ind),[-(shiftsY(ind)+shiftsY_more(idx)) -(shiftsX(ind)+shiftsX_more(idx))],'FillValues',fillmean(ind),'OutputView','same');
+        newtilt(:,:,ind)=imtranslate(tilt(:,:,ind),[-(shiftsY(ind)+shiftsY_more(ind)) -(shiftsX(ind)+shiftsX_more(ind))],'FillValues',fillmean(ind),'OutputView','same');
     end
     
     %Save to new MRC names rec_...
@@ -469,14 +471,14 @@ disp(sprintf('clusteralign_astra_reconstruct(0,90,0,''%s'',''%s'')',strrep(newFi
 
 %####################################################
 function r_mn=r_mn(Imagem,Imagen,shift_limit,do_filt)
-    margval=0.3;
+    margval=0.15;
     Cmargval=1-margval;
     if do_filt==1
         Imagem=imgaussfilt(Imagem-imgaussfilt(Imagem,100),3);
         Imagen=imgaussfilt(Imagen-imgaussfilt(Imagen,100),3);
     elseif do_filt==2
-        Imagem=imgaussfilt(Imagem-imgaussfilt(Imagem,20),2); 
-        Imagen=imgaussfilt(Imagen-imgaussfilt(Imagen,20),2);
+        Imagem=imgaussfilt(Imagem-imgaussfilt(Imagem,30),2); 
+        Imagen=imgaussfilt(Imagen-imgaussfilt(Imagen,30),2);
     end
     figure(2);
     subplot(1,2,1);
