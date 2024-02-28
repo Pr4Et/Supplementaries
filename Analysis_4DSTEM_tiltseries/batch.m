@@ -30,10 +30,8 @@ stepa=input('Step size [deg]? ');%usually 3
 grp=input('Group size of tilt views on the same side? '); %usually 3
 maxa=input('Maximum angle [deg]? '); %usually 60
 direction=input('Direction? 1= negative before positive, -1= positive before negative '); %1 is for negative and then positive, -1 is for positive and then negative 
-loadparam_flag=0; %learn from scan s0 data
-usemap=0; %0=Use linear descan parameters;
 
-function_Arinatomo_rings_v9(Chosen_Filename_file1,N_of_slices,nX,loadparam_flag,usemap);
+function_Arinatomo_rings_v9(Chosen_Filename_file1,N_of_slices,nX);
 function_ch_reorder(Chosen_Filename_HAADF,stepa,grp,maxa,direction);
 function_rings_reorder(Chosen_Filename_ring1,stepa,grp,maxa,direction);
 function_rings_align(Chosen_Filename_HAADF_reorder,Chosen_Filename_ring1_reorder,tiltfile);
