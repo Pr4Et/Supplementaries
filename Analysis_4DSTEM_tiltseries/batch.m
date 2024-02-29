@@ -14,7 +14,7 @@
 %%%%%%%%%%%
 [filename,path] = uigetfile('Z:\shared\ArinaData\*_s0_data_000001.h5','Fetch Arina data file with sample');
 Chosen_Filename_file1=[path filename];
-Chosen_Filename_ring1=strrep(Chosen_Filename_file1,'*_s0_data_000001.h5','_ring1.mrc');
+Chosen_Filename_ring1=strrep(Chosen_Filename_file1,'_s0_data_000001.h5','_ring1.mrc');
 Chosen_Filename_ring1_reorder=strrep(Chosen_Filename_ring1,'_ring1.mrc','_ring1_reorder.mrc');
 tiltfile=strrep(Chosen_Filename_ring1,'_ring1.mrc','_reorder.rawtlt');
 Chosen_Filename_ring1_reorder_preali=strrep(Chosen_Filename_ring1,'_ring1.mrc','_ring1_reorder_preali.mrc');
