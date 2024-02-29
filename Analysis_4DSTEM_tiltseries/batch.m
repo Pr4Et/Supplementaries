@@ -16,7 +16,7 @@
 Chosen_Filename_file1=[path filename];
 Chosen_Filename_ring1=strrep(Chosen_Filename_file1,'_s0_data_000001.h5','_ring1.mrc');
 Chosen_Filename_ring1_reorder=strrep(Chosen_Filename_ring1,'_ring1.mrc','_ring1_reorder.mrc');
-tiltfile=strrep(Chosen_Filename_ring1,'_ring1.mrc','_reorder.rawtlt');
+tiltfile=strrep(Chosen_Filename_ring1,'_ring1.mrc','_ring1_reorder.rawtlt');
 Chosen_Filename_ring1_reorder_preali=strrep(Chosen_Filename_ring1,'_ring1.mrc','_ring1_reorder_preali.mrc');
 Chosen_Filename_sect1_reorder_preali=strrep(Chosen_Filename_ring1_reorder_preali,'_ring1_','_sect1_');
 Chosen_Filename_ring1_reorder_preali_rec_BP=strrep(Chosen_Filename_ring1,'_ring1.mrc','_ring1_reorder_preali_rec_BP.mrc');
@@ -41,10 +41,11 @@ for ringno=1:16
     filename=strrep(Chosen_Filename_ring1_reorder_preali,'_ring1_',sprintf('_ring%d_',ringno));
     clusteralign_astra_reconstruct_BP(0,90,0,filename,tiltfile,'',1,300);
 end
-
+function_tomos_pca(Chosen_Filename_ring1_reorder_preali_rec_BP);
 
 filename=strrep(Chosen_Filename_ring1_reorder_preali,'_ring1_','_DiDPC1_');
 clusteralign_astra_reconstruct(0,90,0,filename,tiltfile,'',1,300); %SIRT, requires a lot of GPU memory, use BP instead for low resources or replace 1->2 for binning of 2
+
 
 %%%%%%%%%%%%%%%
 %  FUNCTIONS  %
@@ -524,7 +525,7 @@ function function_ch_order(Chosen_Filename_HAADF,stepa,grp,maxa,direction)
         mRCImage=MRCImage;%Insentiate MRCImage in mRCImage
         mRCImage = open(mRCImage, Chosen_Filename, flgLoadVolume, showHeader);
         tilt = getVolume(mRCImage, [], [], []);
-        ntilts = length(tilt(1,1,:))-remove_ntilt;%getNZ(mRCImage);
+        ntilts = min(length(tilt(1,1,:))-remove_ntilt,length(pos_angle_vector));%getNZ(mRCImage);
         nX = getNX(mRCImage);
         nY = getNY(mRCImage);
         sizeXangstrom=getCellX(mRCImage);
@@ -715,7 +716,7 @@ function function_rings_reorder(Chosen_Filename_ring1,stepa,grp,maxa,direction)
         mRCImage=MRCImage;%Insentiate MRCImage in mRCImage
         mRCImage = open(mRCImage, Chosen_Filename, flgLoadVolume, showHeader);
         tilt = getVolume(mRCImage, [], [], []);
-        ntilts = length(tilt(1,1,:))-remove_ntilt;%getNZ(mRCImage);
+        ntilts = min(length(tilt(1,1,:))-remove_ntilt,length(pos_angle_vector));%getNZ(mRCImage);
         nX = getNX(mRCImage);
         nY = getNY(mRCImage);
         sizeXangstrom=getCellX(mRCImage);
