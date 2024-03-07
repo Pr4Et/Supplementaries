@@ -403,7 +403,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Order HAADF tilt-series (MRC) 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function function_ch_order(Chosen_Filename_HAADF,stepa,grp,maxa,direction)
+function function_ch_reorder(Chosen_Filename_HAADF,stepa,grp,maxa,direction)
     remove_ntilt=0;  %How many tilt view to exclude from end of series
     remove_minus=0; %How many negative angles to exclude
     remove_plus=0;  %How many positive angles to exclude
