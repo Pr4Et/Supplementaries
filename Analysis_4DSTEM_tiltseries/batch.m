@@ -1,6 +1,7 @@
 % Simple batch to reconstruct BP-PCA and SIRT-DiDPC1 from hdf5 tilt series
 % Assuming data acquired using Arina camera with SavvyScan 4D-STEM software/system.
 % Prerequirements:
+
 % Decoding software for hdf5 files +bitshuffle compression filter (https://www.hdfgroup.org/downloads/)
 % MatTomo (PEET project: https://bio3d.colorado.edu/imod/matlab.html).
 % and Astra-toolbox (https://astra-toolbox.com/)
@@ -20,7 +21,7 @@ tiltfile=strrep(Chosen_Filename_ring1,'_ring1.mrc','_ring1_reorder.rawtlt');
 Chosen_Filename_ring1_reorder_preali=strrep(Chosen_Filename_ring1,'_ring1.mrc','_ring1_reorder_preali.mrc');
 Chosen_Filename_sect1_reorder_preali=strrep(Chosen_Filename_ring1_reorder_preali,'_ring1_','_sect1_');
 Chosen_Filename_ring1_reorder_preali_rec_BP=strrep(Chosen_Filename_ring1,'_ring1.mrc','_ring1_reorder_preali_rec_BP.mrc');
-[filename,path] = uigetfile('Z:\shared\SavvyscanData\*.mrc','Fetch ordered HAADF tilt series (MRC file)');
+[filename,path] = uigetfile('Z:\shared\SavvyscanData\*.mrc','Fetch non-ordered HAADF tilt series (MRC file)');
 Chosen_Filename_HAADF=[path filename];
 Chosen_Filename_HAADF_reorder=strrep(Chosen_Filename_HAADF,'.mrc','_reorder.mrc');
 
@@ -37,14 +38,15 @@ function_rings_reorder(Chosen_Filename_ring1,stepa,grp,maxa,direction);
 function_rings_align(Chosen_Filename_HAADF_reorder,Chosen_Filename_ring1_reorder,tiltfile);
 function_sect_iDPC(Chosen_Filename_sect1_reorder_preali);
 
+filename=strrep(Chosen_Filename_ring1_reorder_preali,'_ring1_','_DiDPC1_');
+clusteralign_astra_reconstruct(0,90,0,filename,tiltfile,'',1,300); %SIRT, requires a lot of GPU memory, use BP instead for low resources or replace 1->2 for binning of 2
+clusteralign_astra_reconstruct_BP(0,90,0,filename,tiltfile,'',1,300); %SIRT, requires a lot of GPU memory, use BP instead for low resources or replace 1->2 for binning of 2
+
 for ringno=1:16
     filename=strrep(Chosen_Filename_ring1_reorder_preali,'_ring1_',sprintf('_ring%d_',ringno));
     clusteralign_astra_reconstruct_BP(0,90,0,filename,tiltfile,'',1,300);
 end
-function_tomos_pca(Chosen_Filename_ring1_reorder_preali_rec_BP);
-
-filename=strrep(Chosen_Filename_ring1_reorder_preali,'_ring1_','_DiDPC1_');
-clusteralign_astra_reconstruct(0,90,0,filename,tiltfile,'',1,300); %SIRT, requires a lot of GPU memory, use BP instead for low resources or replace 1->2 for binning of 2
+%function_tomos_pca(Chosen_Filename_ring1_reorder_preali_rec_BP);
 
 
 %%%%%%%%%%%%%%%
@@ -802,14 +804,16 @@ function function_rings_align(Chosen_Filename_HAADF_reorder,Chosen_Filename_ring
     fillmean=zeros(ntilts,1);
     mintilt=min(orderv(abs(theta_vec)==min(abs(theta_vec))));
     
-    
+    do_filt=1;
+    shift_limit=250;
+
     if skip_cor==0
         accumulate_x=0;
         accumulate_y=0;
         for ind=mintilt-1:-1:1
             imagA=tilt(:,:,ind+1);
             imagB=tilt(:,:,ind);
-            r=r_mn(imagA,imagB,400,2); %was 400
+            r=r_mn(imagA,imagB,shift_limit,do_filt); %was 400
             accumulate_x=accumulate_x+r(1);
             accumulate_y=accumulate_y+r(2);
             shiftsX(ind)=accumulate_x;
@@ -826,7 +830,7 @@ function function_rings_align(Chosen_Filename_HAADF_reorder,Chosen_Filename_ring
         for ind=mintilt+1:ntilts
             imagA=tilt(:,:,ind-1);
             imagB=tilt(:,:,ind);
-            r=r_mn(imagA,imagB,400,2);%was 400
+            r=r_mn(imagA,imagB,shift_limit,do_filt);%was 400
             accumulate_x=accumulate_x+r(1);
             accumulate_y=accumulate_y+r(2);
             shiftsX(ind)=accumulate_x;
@@ -855,7 +859,7 @@ function function_rings_align(Chosen_Filename_HAADF_reorder,Chosen_Filename_ring
     mrg=0.05;
     nZ=400;
     do_filt=2;
-    shift_limit=150;
+    shift_limit=200;
     phi=90*pi/180;
     psi=0*pi/180;
     rotation_xaxis=(abs(cos(phi))<0.7);
@@ -1756,12 +1760,14 @@ end
 function r_mn=r_mn(Imagem,Imagen,shift_limit,do_filt)
     margval=0.3;
     Cmargval=1-margval;
-    if do_filt==1
-        Imagem=imgaussfilt(Imagem-imgaussfilt(Imagem,100),3);
-        Imagen=imgaussfilt(Imagen-imgaussfilt(Imagen,100),3);
+    if do_filt==1 
+        Imagem=imgaussfilt(Imagem-imgaussfilt(Imagem,100),10);
+        Imagen=imgaussfilt(Imagen-imgaussfilt(Imagen,100),10);
     elseif do_filt==2
-        Imagem=imgaussfilt(Imagem-imgaussfilt(Imagem,20),2); 
-        Imagen=imgaussfilt(Imagen-imgaussfilt(Imagen,20),2);
+        Imagem=imgaussfilt(Imagem-imgaussfilt(Imagem,60),5); 
+        Imagen=imgaussfilt(Imagen-imgaussfilt(Imagen,60),5);
+        Imagem=imgaussfilt(Imagem-imgaussfilt(Imagem,30),3); 
+        Imagen=imgaussfilt(Imagen-imgaussfilt(Imagen,30),3);
     end
     figure(2);
     subplot(1,2,1);
@@ -1780,7 +1786,10 @@ function r_mn=r_mn(Imagem,Imagen,shift_limit,do_filt)
     yoffset = ypeak-tempuy;
     xoffset = xpeak-tempux;
     if abs(yoffset)>shift_limit || abs(xoffset)>shift_limit
-        correlationOutput = normxcorr2(imgaussfilt(view_in,10),imgaussfilt(Imagen,10));
+        Imagem=imgaussfilt(Imagem-imgaussfilt(Imagem,40),15); 
+        Imagen=imgaussfilt(Imagen-imgaussfilt(Imagen,40),15);
+        view_in=Imagem(tempx:tempux,tempy:tempuy);
+        correlationOutput = normxcorr2(view_in,Imagen);
         [maxCorrValue, maxIndex] = max(abs(correlationOutput(:)));
         [xpeak, ypeak] = ind2sub(size(correlationOutput),maxIndex(1));%find(correlationOutput==max(correlationOutput(:)));
         yoffset = ypeak-tempuy;

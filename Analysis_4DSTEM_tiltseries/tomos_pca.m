@@ -48,6 +48,7 @@ for row=1:16+ring17_for_haadf+ringC_included*3
         cov(row,col)=mean(mean(mean(grand_vol(:,:,zmin_anz:zmax_anz,row).*grand_vol(:,:,zmin_anz:zmax_anz,col))));
     end
 end
+clear sum;
 %SVD -> U(:,1) and U(:,2) are the most important modes (eigen vectors)
 [U,S,V] = svd(cov);
 f=diag(S);
@@ -63,8 +64,8 @@ p4d4(1,1,1,:)=U(:,4);
 
 figure(1)
 plotfile=strrep(Chosen_Filename_ch1,'.mrc','.PCAweighting.tif');
-plot(1:16,U(:,1),'*b-',1:16,U(:,2),'hr-',1:16,U(:,3),'dg-',1:16,U(:,4),'^c-');
-%bar(1:16,U(:,1:4));
+%plot(1:16,U(:,1),'*b-',1:16,U(:,2),'hr-',1:16,U(:,3),'dg-',1:16,U(:,4),'^c-');
+bar(1:16,U(:,1:3),'BarWidth',1.5);
 xlabel('Ring #');
 ylabel('Contribution factor');
 legend('PCA1','PCA2','PCA3','PCA4');
@@ -75,7 +76,7 @@ print(gcf,plotfile,'-dtiff');
 vol_pca1=sum(grand_vol.*p4d1,4);
 vol_pca2=sum(grand_vol.*p4d2,4);
 vol_pca3=sum(grand_vol.*p4d3,4);
-vol_pca4=sum(grand_vol.*p4d4,4);
+%vol_pca4=sum(grand_vol.*p4d4,4);
 
 %Save new files
 New_Filename=strrep(Chosen_Filename_ch1,'ring1','PCA1');
@@ -96,12 +97,12 @@ newmRCImage.filename=New_Filename;
 newmRCImage = setVolume(newmRCImage, vol_pca3);
 save(newmRCImage, New_Filename);
 close(newmRCImage);
-New_Filename=strrep(Chosen_Filename_ch1,'ring1','PCA4');
-newmRCImage = MRCImage;%Instentiate MRCImage object
-newmRCImage.filename=New_Filename;
-newmRCImage = setVolume(newmRCImage, vol_pca4);
-save(newmRCImage, New_Filename);
-close(newmRCImage);
+%New_Filename=strrep(Chosen_Filename_ch1,'ring1','PCA4');
+%newmRCImage = MRCImage;%Instentiate MRCImage object
+%newmRCImage.filename=New_Filename;
+%newmRCImage = setVolume(newmRCImage, vol_pca4);
+%save(newmRCImage, New_Filename);
+%close(newmRCImage);
 
 
 
