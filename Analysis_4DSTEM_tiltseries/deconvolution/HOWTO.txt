@@ -8,8 +8,9 @@ input_values.txt
 PSF3x3pipe.mrc   (optimized for -60 to 60 step 3 deg tilt series, but may work for other settings as well or prepared from the matlab code PSF4deconvolution.m).
 (Both PSF and mrc should have the same pixel size in the header. Here we use the default 1 A/pix, meaning that we do not manage MRC headers).
 
-Prerequest:
-Have PRIISM installation (https://github.com/tnakazato/priism) with ER-Decon II addon (requested from agard@msg.ucsf.edu).
+Prerequisite:
+PRIISM installation (https://github.com/tnakazato/priism) with ER-Decon II addon (requested from agard@msg.ucsf.edu).
+IMOD installation.
 
 
 run:
