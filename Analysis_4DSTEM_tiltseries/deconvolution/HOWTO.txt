@@ -1,0 +1,25 @@
+Instructions how to run the Deconvolution script: 
+
+place in your dedicated deconvolution folder:
+29012024_deconscript_parallel.py
+filename_rec.mrc
+filename_rec.tlt
+input_values.txt
+PSF3x3pipe.mrc   (optimized for -60 to 60 step 3 deg tilt series, but may work for other settings as well or prepared from the matlab code PSF4deconvolution.m).
+(Both PSF and mrc should have the same pixel size in the header. Here we use the default 1 A/pix, meaning that we do not manage MRC headers).
+
+Prerequest:
+Have PRIISM installation (https://github.com/tnakazato/priism) with ER-Decon II addon (requested from agard@msg.ucsf.edu).
+
+
+run:
+
+module unload IMOD
+module load priism/4.7.2
+source /apps/RH7U2/general/priism/4.7.2/Priism_setup.sh
+module load cuda/10.2 IMOD/4.12.10
+export LIBGL_ALWAYS_INDIRECT=0
+cd <your deconvolution folder>
+nohup python 29012024_deconscript_parallel.py > logfile.log
+
+The output will be generated in a new sub folder
