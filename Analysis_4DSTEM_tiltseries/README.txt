@@ -5,5 +5,5 @@ The scripts are intended to produce tomograms from hdf5 files in a tilt series a
 Scripts with ch* prefix are used to analyze data acquired by OPAL(El-Mul) segmented detector with the SavvyScan system.
 license: Creative Commons Attribution 4.0 International
 Citation: 
-Seifer et al (2024), Optimizing contrast in automated 4D-STEM cryo-tomography.
+Seifer et al (2024), Optimizing contrast in automated 4D-STEM cryo-tomography,  https://doi.org/10.1093/mam/ozae050.
 Shahar Seifer (2024), 4D-STEM tomography scripts, https://zenodo.org/doi/10.5281/zenodo.10650634   
