@@ -8,3 +8,5 @@ Based on the alignment data in *aln file and 3D shadow montage (*_3dmontage_S*.m
 The 3D backprojection is processed further by 3D deconvolution (see details in Supplementaries/Analysis_4DSTEM_tiltseries at main · Pr4Et/Supplementaries · GitHub).
 A 3D shadow montage can be also generated as a 3D cone-beam backprojection (using Astra Toolbox), which  is demonstrated in cone_rec3d.m. For processing prz file we convert them to hdf5.  
 The scripts with CTF in the name are versions with CTF correction (only sign flipping of spectral components, without inversion for negative defocus). These separate scripts require more information on the settings.
+
+Installation: Requires @MRCImage library from MatTomo, PEET project: https://bio3d.colorado.edu/imod/matlab.html and hdf5 libraries from https://www.hdfgroup.org/download-hdf5/.
