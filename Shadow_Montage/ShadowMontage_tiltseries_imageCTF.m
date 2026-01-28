@@ -4,11 +4,13 @@ function ShadowMontage_tiltseries_imageCTF()
 % filename by S#, starting from number 0. The order of the tiltviews is according to order of acquisition.
 % Written by Shahar Seifer, Weizmann Institute of Science, 2025
     
-    nX=input('nX= ');
+    nX=input('Number of positions per axis, nX= ');
     nY=nX;
-    required_nX=input('Render shodow images to size nX= ');
-    
+    required_upscaling=input('Render shadow images to upscaling of= ');
     cameraset=input('Camera size 96 / 192 / other ?  ');
+    
+    margin=0.0625;
+
     DECTRIS_Arina=input('Uses Dectris Arina ? [1-yes, 0-no] ');
     if DECTRIS_Arina
         isOldArina=input('Is it old Arina prototype? (0: no,  1:yes) ');
@@ -27,7 +29,7 @@ function ShadowMontage_tiltseries_imageCTF()
     first_s=input('First S index in tilt series: ');
     end_s=input('End S index: ');
     step_s=input('Step s index: ');
-    Ns_calc=input('Calculated synchronization step / or -1 based on image shift:  ');
+    Ns_calc=input('Enter synchronization step / or -1 to estimate based on image shift:  ');
     alpha_mrad=input('Convergence angle alpha [mrad]: ');
     alpha_rad=alpha_mrad/1000;
     d_nm=step_size_um*1000;
@@ -36,17 +38,8 @@ function ShadowMontage_tiltseries_imageCTF()
     lambda_nm= 1.2398/ sqrt(K_keV* (2 * 511 + K_keV)); % wavelength in nanometers (for 200KeV: 0.0025);
     
     
-    sizeVOLx=required_nX;
-    sizeVOLy=required_nX;
-    sizeVOLz=thickness_pixels;
     
     
-    if thickness_um==-1
-        thickness_scale=1;
-        thickness_um=thickness_pixels*(step_size_um*nX/sizeVOLx);
-    else
-        thickness_scale=(thickness_um/thickness_pixels)/(step_size_um*nX/sizeVOLx); %this is the true aspect ratio dz/dx of the 3d result
-    end
     
     [filename,path] = uigetfile('z:\shared\ArinaData\*00001.h5','Fetch first HD5 file of s0 projection');
     
@@ -80,7 +73,6 @@ function ShadowMontage_tiltseries_imageCTF()
         alignY_vector=zeros(1,NumTilts);
     end
     
-    grandRec=zeros(sizeVOLx,sizeVOLy,sizeVOLz);
     
     fid=fopen('MyFile.txt','w');
     
@@ -110,11 +102,6 @@ function ShadowMontage_tiltseries_imageCTF()
     newFilename=strrep(Chosen_Filename_file1,'.h5','_3dmontage.mrc');
     newFilename_tilt=strrep(Chosen_Filename_file1,'.h5','_Tiltview.mrc');
     
-    
-    newFilename_log=strrep(Chosen_Filename_file1,'.h5','_log.txt');
-    fid=fopen(newFilename_log,'w');
-    fprintf(fid, sprintf('scan_step[nm]=%g, result_stepX[nm]=%g, result_stepZ[nm]=%g,  thickness[um]=%g, alpha=%g,  Ns_synch=%g,  ignore_BF=%g, sizeVOLx=%g \n',step_size_um*1000,(step_size_um*nX/sizeVOLx)*1000,thickness_scale*(step_size_um*nX/sizeVOLx)*1000,thickness_um,alpha_mrad,Ns_calc,ignore_BF,sizeVOLx));
-    fclose(fid);
     
     
     mat=h5read(Chosen_Filename_file1,'/entry/data/data');
@@ -208,6 +195,18 @@ function ShadowMontage_tiltseries_imageCTF()
             Ns_best=Ns_calc;
         end
         %estimate how many different synchronizations are required based on the sample thickness and microscope settings 
+        if ind2_s_number==1
+            tnX=round(2*cameraset+abs(Ns_best)*nX);
+            vectx=1+floor(margin*nX):tnX-floor(margin*tnX);
+            required_nX_center=round(length(vectx)*required_upscaling);
+            if thickness_um==-1
+                thickness_scale=1;
+                thickness_um=thickness_pixels*(step_size_um*nX/required_nX_center);
+            else
+                thickness_scale=(thickness_um/thickness_pixels)/(step_size_um*nX/required_nX_center); %this is the true aspect ratio dz/dx of the 3d result
+            end
+        end
+
         center_defocus_um=step_size_um*BFdisc_diameter/(Ns_best*2*alpha_mrad*0.001);
         Ns_min=max(2,step_size_um*BFdisc_diameter/((center_defocus_um+(thickness_um/2)/cos(tilt_angle_rad))*2*alpha_mrad*0.001));
         Ns_max=min(30,step_size_um*BFdisc_diameter/(max((center_defocus_um-(thickness_um/2)/cos(tilt_angle_rad)),0.5)*2*alpha_mrad*0.001));
@@ -218,14 +217,32 @@ function ShadowMontage_tiltseries_imageCTF()
         Ns_max=Ns_skip*round(Ns_max/Ns_skip);
      
         disp(sprintf('Ns_min=%g  ,  Ns_max=%g  ,Ns_center=%g,   BF_diam. %d pix',Ns_min,Ns_max,Ns_best,BFdisc_diameter));
+
+        if ind2_s_number==1
+            canvas_x=round(2*cameraset+abs(Ns_max)*nX);
+            canvas_y=round(2*cameraset+abs(Ns_max)*nY);
+            crop_vectx=(1+floor(margin*canvas_x)):(canvas_x-floor(margin*canvas_x));
+            crop_vecty=(1+floor(margin*canvas_y)):(canvas_y-floor(margin*canvas_y));
+            required_nX=round(length(crop_vectx)*required_upscaling/Ns_max);
+            required_nY=round(length(crop_vecty)*required_upscaling/Ns_max);
     
-    
-    
+            sizeVOLx=required_nX;
+            sizeVOLy=required_nY;
+            sizeVOLz=thickness_pixels;
+
+            newFilename_log=strrep(Chosen_Filename_file1,'.h5','_log.txt');
+            fid=fopen(newFilename_log,'w');
+            fprintf(fid, sprintf('scan_step[nm]=%g, result_stepX[nm]=%g, result_stepZ[nm]=%g,  thickness[um]=%g, alpha=%g,  Ns_synch=%g,  ignore_BF=%g, sizeVOLx=%g \n',step_size_um*1000,(step_size_um*nX/sizeVOLx)*1000,thickness_scale*(step_size_um*nX/sizeVOLx)*1000,thickness_um,alpha_mrad,Ns_calc,ignore_BF,sizeVOLx));
+            fclose(fid);
+        end
+
+
         dx_numbers_values=Ns_min:Ns_skip:Ns_max;
         allposvect=1:length(dx_numbers_values);
         stack_tiles=zeros(sizeVOLx,sizeVOLy,length(dx_numbers_values));
-        startSafeParpool(6);
-        parfor dx_numbers_pos=1:length(dx_numbers_values)  %shift numbers of different layers in the sample
+        %startSafeParpool(1);
+        %parfor dx_numbers_pos=1:length(dx_numbers_values)  %shift numbers of different layers in the sample
+        for dx_numbers_pos=1:length(dx_numbers_values)  %shift numbers of different layers in the sample
             shift_step_camera=dx_numbers_values(dx_numbers_pos);
        
             calc_defocus_nm=BFdisc_diameter*step_size_um/(shift_step_camera*2*alpha_rad);
@@ -245,15 +262,15 @@ function ShadowMontage_tiltseries_imageCTF()
             else
                 yshift_dy=-shift_step_camera; 
             end
-            grand_result=double(zeros(round(2*cameraset+(abs(xshift_dy)*nYwin+abs(xshift_dx)*nXwin)),round(2*cameraset+(abs(yshift_dy)*nYwin+abs(yshift_dx)*nXwin))));
-            x0=floor((2*cameraset+(abs(xshift_dy)*nYwin+abs(xshift_dx)*nXwin)*(1))/2);
-            y0=x0;
+            %grand_result=double(zeros(canvas_x,canvas_Y));
+            x0=floor((1+ canvas_x)/2);
+            y0=floor((1+ canvas_y)/2);
         
             flag_debug=0;
             cos_orient_angle=1;
             sin_orient_angle=0;
-            grand_tile=double(zeros(round(2*cameraset+(abs(xshift_dy)*nYwin+abs(xshift_dx)*nXwin)*(1)),round(2*cameraset+(abs(yshift_dy)*nYwin+abs(yshift_dx)*nXwin)*(1))));
-            grand_count=uint16(zeros(round(2*cameraset+(abs(xshift_dy)*nYwin+abs(xshift_dx)*nXwin)*(1)),round(2*cameraset+(abs(yshift_dy)*nYwin+abs(yshift_dx)*nXwin)*(1))));
+            grand_tile=double(zeros(canvas_x,canvas_y));
+            grand_count=uint16(zeros(canvas_x,canvas_y));
             posg=0;
             for n=1:no_of_files
                 Chosen_Filename_file=strrep(Chosen_Filename_file1,'0001.h5',sprintf('%04d.h5',n));
@@ -308,14 +325,11 @@ function ShadowMontage_tiltseries_imageCTF()
             tileimage=real(ifft2(ifftshift(tileim_ft_cor)));
     
     
-            margin=0.0625;
-            required_nX=sizeVOLx;%input('required nX: ');
-            required_nY=sizeVOLy;%input('required nY: ');
-            tnX=size(tileimage,1);
-            tnY=size(tileimage,2);
-            vectx=1+margin*nX:tnX-margin*tnX;
-            vecty=1+margin*nY:tnY-margin*tnY;
-            image_croped=tileimage(round(vectx),round(vecty));
+            %tnX=size(tileimage,1);
+            %tnY=size(tileimage,2);
+            %crop_vectx=1+floor(margin*tnX):tnX-floor(margin*tnX);
+            %crop_vecty=1+floor(margin*tnY):tnY-floor(margin*tnY);
+            image_croped=tileimage(crop_vectx,crop_vecty);
             im_resized=imresize(image_croped,[required_nX required_nY],"bilinear");
             %im_final=extract_balanced_imshow(im_resized);
             stack_tiles(:,:,dx_numbers_pos)=im_resized;
