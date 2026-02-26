@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="C:\Users\seifer\Documents\Visual Studio 2022\EerReaderLib-master\Test\eer2mrc.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\ElectronCountedFramesDecompressor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\seifer\Documents\Visual Studio 2022\EerReaderLib-master\Test\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{0484B566-1523-3EA2-86CD-C52A56C5C55A}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
