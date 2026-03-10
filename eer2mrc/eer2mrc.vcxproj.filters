@@ -4,9 +4,6 @@
     <ClCompile Include="C:\Users\seifer\Documents\Visual Studio 2022\EerReaderLib-master\Test\eer2mrc.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\ElectronCountedFramesDecompressor.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="C:\Users\seifer\Documents\Visual Studio 2022\EerReaderLib-master\Test\CMakeLists.txt" />

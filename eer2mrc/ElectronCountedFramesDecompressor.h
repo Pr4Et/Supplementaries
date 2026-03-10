@@ -16,6 +16,11 @@ struct ElectronPos
     uint16_t x=0;
     uint16_t y=0;
     
+	//Need to be added back for compiling EerReaderLib, Shahar
+    ElectronPos() : x(0), y(0) {}
+    ElectronPos(uint16_t x_, uint16_t y_) : x(x_), y(y_) {}
+
+	//erased for project eer2mrc
     //ElectronPos(uint16_t x, uint16_t y) : x(x), y(y) {}
 };
 

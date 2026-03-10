@@ -9,15 +9,20 @@ set(CMAKE_CXX_EXTENSIONS ON)
 # vcpkg-provided libtiff
 find_package(TIFF REQUIRED)
 
+find_package(FFTW3 CONFIG REQUIRED)
+
+
+
+
 # Find EERReaderLib (already built by the parent library)
 # Adjust the path if your EERReaderLib outputs elsewhere.
 find_library(EERREADERLIB_LIBRARY
-    NAMES eer2mrcLib
-    PATHS ${CMAKE_CURRENT_SOURCE_DIR}/../build/lib/Debug
+    NAMES EERReaderLib
+    PATHS ${CMAKE_CURRENT_SOURCE_DIR}/../build/lib/Release
 )
 
 if(NOT EERREADERLIB_LIBRARY)
-    message(FATAL_ERROR "eer2mrcLib.lib not found in ../build/lib. Build eer2mrcLib first.")
+    message(FATAL_ERROR "eer2mrcLib.lib not found in ../build/lib/Release. ")
 endif()
 
 add_executable(eer2mrc eer2mrc.cpp)
@@ -30,4 +35,5 @@ target_include_directories(eer2mrc PRIVATE
 target_link_libraries(eer2mrc PRIVATE
     ${EERREADERLIB_LIBRARY}
     TIFF::TIFF
+	FFTW3::fftw3
 )
