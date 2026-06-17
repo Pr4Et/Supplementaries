@@ -200,9 +200,9 @@ function ShadowMontage_tiltseries_ver2()
             required_nX_center=round(length(vectx)*required_upscaling);
             if thickness_um==-1
                 thickness_scale=1;
-                thickness_um=thickness_pixels*(step_size_um*nX/required_nX_center);
+                thickness_um=thickness_pixels*(step_size_um/required_upscaling);
             else
-                thickness_scale=(thickness_um/thickness_pixels)/(step_size_um*nX/required_nX_center); %this is the true aspect ratio dz/dx of the 3d result
+                thickness_scale=(thickness_um/thickness_pixels)/(step_size_um/required_upscaling); %this is the true aspect ratio dz/dx of the 3d result
             end
         end
 
@@ -321,12 +321,15 @@ function ShadowMontage_tiltseries_ver2()
             qX_CTF=qXr/(imageN*d_nm/shift_step_camera);
             q2_CTF=qX_CTF.^2+qY_CTF.^2;
             Q2_bf=(BFdisc_diameter/imageN)^2;
-            CTF=sin(-defocus_sign*pi*calc_defocus_nm*lambda_nm*q2_CTF);
-            CTF=CTF-CTF*(q2_CTF<Q2_bf);
+            CTF=sin(-defocus_sign*pi*calc_defocus_nm*lambda_nm*(q2_CTF));
+            
             cor_CTF=sign(CTF)+(CTF==0);
+            if defocus_sign>0
+                cor_CTF=cor_CTF+2*exp(-q2_CTF/Q2_bf);
+            end
     
             if CTFcorrect
-                tileim_ft_cor=(fftshift(fft2(tileimage)))./cor_CTF;
+                tileim_ft_cor=(fftshift(fft2(tileimage))).*cor_CTF;
                 tileimage=real(ifft2(ifftshift(tileim_ft_cor)));
             end
     
@@ -336,7 +339,6 @@ function ShadowMontage_tiltseries_ver2()
             %crop_vecty=1+floor(margin*tnY):tnY-floor(margin*tnY);
             image_croped=tileimage(crop_vectx,crop_vecty);
             im_resized=imresize(image_croped,[required_nX required_nY],"bilinear");
-            %im_final=extract_balanced_imshow(im_resized);
             stack_tiles(:,:,dx_numbers_pos)=im_resized;
         
         
