@@ -297,8 +297,12 @@ function ShadowMontage_tiltseries_ver2()
                     HR_Yc_nonrot=((Xp-nXwin/2)*yshift_dx+(Yp-nYwin/2)*yshift_dy);
                     HR_Xc=(round(x0+cos_orient_angle*HR_Xc_nonrot+sin_orient_angle*HR_Yc_nonrot));
                     HR_Yc=(round(y0-sin_orient_angle*HR_Xc_nonrot+cos_orient_angle*HR_Yc_nonrot));
+                    try 
                     grand_tile(HR_Xc-(cameraset/2-1):HR_Xc+(cameraset/2),HR_Yc-(cameraset/2-1):HR_Yc+(cameraset/2))=grand_tile(HR_Xc-(cameraset/2-1):HR_Xc+(cameraset/2),HR_Yc-(cameraset/2-1):HR_Yc+(cameraset/2))+double(im);
                     grand_count(HR_Xc-(cameraset/2-1):HR_Xc+(cameraset/2),HR_Yc-(cameraset/2-1):HR_Yc+(cameraset/2))=grand_count(HR_Xc-(cameraset/2-1):HR_Xc+(cameraset/2),HR_Yc-(cameraset/2-1):HR_Yc+(cameraset/2))+uint16(mask_keep);
+                    catch
+                        %canvas_x,y (and so x0,y0) may be not sufficient for high angles, we ignore these margins
+                    end
                     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                     if flag_debug
                         figure(50)
@@ -321,15 +325,16 @@ function ShadowMontage_tiltseries_ver2()
             qX_CTF=qXr/(imageN*d_nm/shift_step_camera);
             q2_CTF=qX_CTF.^2+qY_CTF.^2;
             Q2_bf=(BFdisc_diameter/imageN)^2;
-            CTF=sin(-defocus_sign*pi*calc_defocus_nm*lambda_nm*(q2_CTF));
-            
-            cor_CTF=sign(CTF)+(CTF==0);
+            CTF=sin(-defocus_sign*pi*calc_defocus_nm*lambda_nm*q2_CTF);
+            cor_invCTF=sign(CTF)+(CTF==0);
             if defocus_sign>0
-                cor_CTF=cor_CTF+2*exp(-q2_CTF/Q2_bf);
+                modulate_invCTF=-cos((pi/2)*(q2_CTF/Q2_bf));
+                modulate_invCTF(q2_CTF>2*Q2_bf)=1;
+                cor_invCTF=cor_invCTF.*modulate_invCTF;
             end
     
             if CTFcorrect
-                tileim_ft_cor=(fftshift(fft2(tileimage))).*cor_CTF;
+                tileim_ft_cor=(fftshift(fft2(tileimage))).*cor_invCTF;
                 tileimage=real(ifft2(ifftshift(tileim_ft_cor)));
             end
     
