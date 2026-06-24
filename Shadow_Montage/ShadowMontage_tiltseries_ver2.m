@@ -244,7 +244,7 @@ function ShadowMontage_tiltseries_ver2()
         for dx_numbers_pos=1:length(dx_numbers_values)  %shift numbers of different layers in the sample
             shift_step_camera=dx_numbers_values(dx_numbers_pos);
        
-            calc_defocus_nm=BFdisc_diameter*step_size_um/(shift_step_camera*2*alpha_rad);
+            calc_defocus_nm=BFdisc_diameter*1000*step_size_um/(shift_step_camera*2*alpha_rad); %corrected
     
             
             im=double(zeros(cameraset,cameraset));
