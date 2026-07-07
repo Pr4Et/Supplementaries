@@ -6,22 +6,61 @@ function ShadowMontage_tiltseries_ver2()
     
     nX=input('Number of positions per axis, nX= ');
     nY=nX;
-    required_upscaling=input('Render shadow images to upscaling of= ');
+    required_upscaling=input('Render shadow images with upscaling of= ');
     cameraset=input('Camera size 96 / 192 / other ?  ');
     
     margin=0.0625;
 
     DECTRIS_Arina=input('Uses Dectris Arina ? [1-yes, 0-no] ');
     if DECTRIS_Arina
+        ArinaLabelInfront=input('Orientation of Arina camera installed? (1- attached from left, 0- attached from right): ');
         isOldArina=0;%input('Is it old Arina prototype? (0: no,  1:yes) ');
         if isOldArina==0  %new Arina
-            caseno_checkDirection=input('Enter case number (1: underfocus, 4: overfocus) ')
+            if ArinaLabelInfront
+                caseno_checkDirection=input('Enter case number (1: overfocus, 4: underfocus) ')
+                if caseno_checkDirection==1
+                    defocus_sign=1;
+                else
+                    defocus_sign=-1;
+                end
+            else
+                caseno_checkDirection=input('Enter case number (1: underfocus, 4: overfocus) ')
+                if caseno_checkDirection==4
+                    defocus_sign=1;
+                else
+                    defocus_sign=-1;
+                end
+            end
+            
         else
-            caseno_checkDirection=input('Enter case number (3: underfocus, 2: overfocus) ')
+            if ArinaLabelInfront
+                caseno_checkDirection=input('Enter case number (3: overfocus, 2: underfocus) ')
+                if caseno_checkDirection==3
+                    defocus_sign=1;
+                else
+                    defocus_sign=-1;
+                end
+
+            else
+                caseno_checkDirection=input('Enter case number (3: underfocus, 2: overfocus) ')
+                if caseno_checkDirection==2
+                    defocus_sign=1;
+                else
+                    defocus_sign=-1;
+                end
+
+            end
         end
     else
         caseno_checkDirection=input('Enter direction case number [1,2,3,4]: ')
+        isOverFocus=input('Is overfocused (1-yes, 0-no): ')
+        if isOverFocus
+            defocus_sign=1;
+        else
+            defocus_sign=-1;
+        end
     end
+
     step_size_um=input('STEM step size [nm]? ')*0.001;
     thickness_pixels=input('Number of pixels in thickness direction: '); %I use not more than 500
     thickness_um=input('Thickness [um] (-1 for automatic): ');
@@ -260,11 +299,6 @@ function ShadowMontage_tiltseries_ver2()
                 yshift_dy=shift_step_camera; 
             else
                 yshift_dy=-shift_step_camera; 
-            end
-            if caseno==2 || caseno==4
-                defocus_sign=1;
-            else
-                defocus_sign=-1;
             end
             %grand_result=double(zeros(canvas_x,canvas_Y));
             x0=floor((1+ canvas_x)/2);
