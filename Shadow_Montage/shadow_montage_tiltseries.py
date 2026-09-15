@@ -23,6 +23,7 @@ import h5py
 import mrcfile
 import numpy as np
 from scipy.ndimage import zoom
+from scipy.ndimage import map_coordinates
 
 # MATLAB options that are not represented in the metadata JSON.
 REQUIRED_UPSCALING = 2.0     #Rendedred upscaling regardless of conditions
@@ -208,15 +209,9 @@ def load_legacy_h5_to_mat(h5_path: Path, nx_hint=None, ny_hint=None):
         else:
             Nx = int(math.sqrt(array.shape[0]))
             Ny = int(array.shape[0] / Nx)
-        mat = np.transpose(array.astype(np.float32, copy=False), (1, 2, 0))
+        mat = np.transpose(array.astype(np.float32, copy=False), (1, 2, 0))  # (T, H, W) -> (H, W, T)
         if mat.shape[2] != Nx * Ny:
             raise ValueError(f"Frame count {mat.shape[2]} != Nx*Ny {Nx*Ny}")
-        perm = []
-        for y_desc in range(Ny - 1, -1, -1):
-            y_rm = (Ny - 1) - y_desc
-            for x in range(Nx):
-                perm.append(y_rm * Nx + x)
-        mat = mat[:, :, np.asarray(perm, dtype=int)]
     return mat, Nx, Ny
 
 
@@ -225,8 +220,184 @@ def load_matlab_oriented(h5_path: Path, Nx: int, Ny: int) -> np.ndarray:
     if (loaded_Nx, loaded_Ny) != (Nx, Ny):
         raise ValueError(f"Loaded scan size {(loaded_Nx, loaded_Ny)} != JSON {(Nx, Ny)}")
     # Required one-time detector-plane swap. Keep the MATLAB array X/Y convention.
-    return np.transpose(mat, (1, 0, 2))
+    mat= np.transpose(mat, (1, 0, 2))
+    #print("Frames loaded:", mat.shape[2])
+    return mat
 
+
+
+def _triangle_kernel(x: np.ndarray) -> np.ndarray:
+    """MATLAB bilinear interpolation kernel."""
+    return np.maximum(0.0, 1.0 - np.abs(x))
+
+
+def _calculate_resize_weights(
+    input_length: int,
+    output_length: int,
+) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Calculate MATLAB-style bilinear interpolation contributions.
+
+    During reduction, the triangular kernel is widened by 1/scale
+    to provide antialiasing.
+    """
+
+    scale = output_length / input_length
+
+    # MATLAB-style pixel-center mapping:
+    #
+    # input_coordinate =
+    #     output_coordinate / scale
+    #     + 0.5 * (1 - 1 / scale)
+    #
+    # Here output coordinates are zero based.
+    output_coordinates = np.arange(
+        output_length,
+        dtype=np.float64,
+    )
+
+    input_coordinates = (
+        output_coordinates / scale
+        + 0.5 * (1.0 - 1.0 / scale)
+    )
+
+    if scale < 1.0:
+        # Original bilinear support is 2 pixels.
+        # Antialiasing broadens it to 2/scale.
+        kernel_width = 2.0 / scale
+
+        def kernel(distance):
+            return scale * _triangle_kernel(scale * distance)
+
+    else:
+        kernel_width = 2.0
+
+        def kernel(distance):
+            return _triangle_kernel(distance)
+
+    left = np.floor(
+        input_coordinates - kernel_width / 2.0
+    ).astype(np.int64)
+
+    number_of_taps = int(np.ceil(kernel_width)) + 2
+
+    indices = (
+        left[:, None]
+        + np.arange(number_of_taps, dtype=np.int64)[None, :]
+    )
+
+    distances = (
+        input_coordinates[:, None]
+        - indices.astype(np.float64)
+    )
+
+    weights = kernel(distances)
+
+    weight_sums = weights.sum(axis=1, keepdims=True)
+
+    weights = np.divide(
+        weights,
+        weight_sums,
+        out=np.zeros_like(weights),
+        where=weight_sums != 0,
+    )
+
+    # MATLAB-like symmetric boundary handling.
+    if input_length == 1:
+        indices[:] = 0
+    else:
+        period = 2 * input_length
+
+        indices = np.mod(indices, period)
+
+        indices = np.where(
+            indices < input_length,
+            indices,
+            period - indices - 1,
+        )
+
+    # Remove columns that contribute nothing anywhere.
+    keep = np.any(np.abs(weights) > 1e-15, axis=0)
+
+    return weights[:, keep], indices[:, keep]
+
+
+def matlab_imresize_bilinear(
+    image: np.ndarray,
+    output_shape: tuple[int, int],
+) -> np.ndarray:
+    """
+    MATLAB-like equivalent of:
+
+        imresize(image, [new_size_1 new_size_2], "bilinear")
+
+    The first and second array dimensions are preserved according
+    to the MATLAB array convention used by the shadow montage.
+
+    Downsampling uses a widened triangular antialiasing kernel.
+    """
+
+    image = np.asarray(image, dtype=np.float64)
+
+    if image.ndim != 2:
+        raise ValueError(
+            f"Expected a two-dimensional image, got {image.shape}"
+        )
+
+    output_size_0 = int(output_shape[0])
+    output_size_1 = int(output_shape[1])
+
+    if output_size_0 <= 0 or output_size_1 <= 0:
+        raise ValueError(
+            f"Invalid output shape: {output_shape}"
+        )
+
+    if image.shape == (output_size_0, output_size_1):
+        return image.copy()
+
+    weights_0, indices_0 = _calculate_resize_weights(
+        input_length=image.shape[0],
+        output_length=output_size_0,
+    )
+
+    weights_1, indices_1 = _calculate_resize_weights(
+        input_length=image.shape[1],
+        output_length=output_size_1,
+    )
+
+    # Resize along the first MATLAB array dimension.
+    temporary = np.empty(
+        (output_size_0, image.shape[1]),
+        dtype=np.float64,
+    )
+
+    for output_index in range(output_size_0):
+        temporary[output_index, :] = np.sum(
+            image[indices_0[output_index], :]
+            * weights_0[output_index, :, None],
+            axis=0,
+        )
+
+    # Resize along the second MATLAB array dimension.
+    resized = np.empty(
+        (output_size_0, output_size_1),
+        dtype=np.float64,
+    )
+
+    for output_index in range(output_size_1):
+        resized[:, output_index] = np.sum(
+            temporary[:, indices_1[output_index]]
+            * weights_1[output_index, :][None, :],
+            axis=1,
+        )
+
+    if resized.shape != (output_size_0, output_size_1):
+        raise RuntimeError(
+            f"Resize produced {resized.shape}, "
+            f"expected {(output_size_0, output_size_1)}"
+        )
+
+    return resized
 
 def direction_parameters(s: Settings) -> tuple[int, float]:
     underfocus = s.defocus_um < 0.0
@@ -292,7 +463,7 @@ def process_one(mat: np.ndarray, s: Settings, Ns: float, bf_diameter: float,
     Xd0 = float((NqX[mask] * m_weight[mask]).sum())
     Yd0 = float((NqY[mask] * m_weight[mask]).sum())
     mask_keep = np.sqrt((NqX - Xd0) ** 2 + (NqY - Yd0) ** 2) <= (0.5 * bf_diameter - 2)
-
+    #print(f"Xd0={Xd0:g}, Yd0={Yd0:g}")
     xshift_dx = -Ns if case > 2 else Ns
     yshift_dy = Ns if case in (1, 3) else -Ns
     x0 = int(math.floor((1 + canvas_x) / 2.0)) - 1  # MATLAB index -> Python index
@@ -341,7 +512,8 @@ def process_one(mat: np.ndarray, s: Settings, Ns: float, bf_diameter: float,
         tile_image = np.real(np.fft.ifft2(np.fft.ifftshift(np.fft.fftshift(np.fft.fft2(tile_image)) * inv)))
 
     cropped = tile_image[margin_x:canvas_x - margin_x, margin_y:canvas_y - margin_y]
-    return bilinear_resize(cropped, output_shape).astype(np.float32)
+    #return bilinear_resize(cropped, output_shape).astype(np.float32)
+    return matlab_imresize_bilinear(cropped, output_shape).astype(np.float32)
 
 
 def make_output_path(s: Settings) -> Path:
