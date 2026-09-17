@@ -2,7 +2,7 @@
 """Create a shadow-montage tilt series from 4D-STEM ARINA HDF5 files.
 Citation: https://doi.org/10.1093/mam/ozaf126
 license: GPL-v3
-installation: pip install numpy scipy h5py
+installation: pip install numpy scipy h5py hdf5plugin mrcfile
 Usage:
     python shadow_montage_tiltseries.py metadata.json
     python shadow_montage_tiltseries.py metadata.json --Ns 2.5
@@ -19,6 +19,7 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
+import hdf5plugin
 import h5py
 import mrcfile
 import numpy as np
