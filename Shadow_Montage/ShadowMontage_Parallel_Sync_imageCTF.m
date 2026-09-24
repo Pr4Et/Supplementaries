@@ -5,10 +5,15 @@ function ShadowMontage_Parallel_Sync_imageCTF()
     
     use_hdf5=input('Use hdf5 files ? [1-yes, 0-no] ' );
     DECTRIS_Arina=input('Uses Dectris Arina ? [1-yes, 0-no] ');
+    Arina_position=input('Arina left of column- Krios (1)/ right of column - f20 (0): ');
     if DECTRIS_Arina
         isOldArina=input('Is it old Arina prototype? (0: no,  1:yes) ');
         if isOldArina==0  %new Arina
-            caseno_checkDirection=input('Enter case number (1: underfocus, 4: overfocus) ')
+            if Arina_position==0
+                caseno_checkDirection=input('Enter case number (1: underfocus, 4: overfocus) ')
+            else
+                caseno_checkDirection=input('Enter case number (4: underfocus, 1: overfocus) ')
+            end
         else
             caseno_checkDirection=input('Enter case number (3: underfocus, 2: overfocus) ')
         end
@@ -25,7 +30,7 @@ function ShadowMontage_Parallel_Sync_imageCTF()
     orient_count=1;
     cameraset=input('Arina camera size 96 / 192/ other ?  ');
     if use_hdf5==1
-        [filename,path] = uigetfile('d:\*00001.h5','Fetch first HD5 file of s0 projection');
+        [filename,path] = uigetfile('Z:\shared\ArinaData\*00001.h5','Fetch first HD5 file of s0 projection');
     else
         [filename,path] = uigetfile('Z:\seifer\show\Muller data\*.raw','Fetch raw binary file');
     end
@@ -110,10 +115,10 @@ function ShadowMontage_Parallel_Sync_imageCTF()
     balanced_imshow(probeimd);
     
     
-    midv=(0.5*max(probeimd(:))+0.5*min(probeimd(:)));
     se = offsetstrel("ball",2,2);
     probeimd_proc = imdilate(probeimd,se);
-    mask_proc=probeimd_proc>midv;
+    midv=(0.5*max(probeimd(:))+0.5*min(probeimd(:))); 
+    mask_proc=probeimd_proc>=0.5*midv;
     BFdisc_diameter=2*sqrt(sum(mask_proc(:))/pi);
     
     figure(2)
