@@ -192,6 +192,7 @@ function ShadowMontage_tiltseries_3d()
         Chosen_Filename_file1=[path filename1];
         tilt_angle_rad=actual_angles_order_rad(ind2_s_number);
         grand_result  = zeros(canvas_x, canvas_y, no_of_files, 'double');
+		background_gray=0;
 
        % try
 
@@ -233,7 +234,6 @@ function ShadowMontage_tiltseries_3d()
             grand_count = zeros(canvas_x, canvas_y, no_of_files, 'uint16');
             cos_orient_angle = 1;
             sin_orient_angle = 0;
-			background_gray=0;
             
             p = gcp('nocreate');
             if isempty(p) || p.NumWorkers ~= no_of_files
