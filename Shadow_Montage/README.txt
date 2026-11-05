@@ -7,15 +7,17 @@ shadowMontage_tiltseries_3d.m, generates shadow montages both in 2D (*_Tiltview.
 The *Tiltview.mrc files are then used to find the tilt series alignment. ForAretomo.m adjusts the boundaries and Aretomo (versions 1 or 2) is used to generate the alignment table (*.aln) and a 3D SART reconstruction if needed. 
 Based on the alignment data in *aln file and 3D shadow montage (*_3dmontage_S*.mrc)  a 3D backprojection from the series is generated in Backproject_align3d_afterAretomo.m. This long process in most cases may be replaced by the more efficient version 2 or the python script.
 Note that the 3D backprojection from the longer processing pipeline should be further processed by 3D deconvolution (see details in Supplementaries/Analysis_4DSTEM_tiltseries at main · Pr4Et/Supplementaries · GitHub).
-A 3D shadow montage can be also generated as a 3D cone-beam backprojection (using Astra Toolbox), which  is demonstrated in cone_rec3d.m. For processing prz file we convert them to hdf5.  
-The scripts with CTF in the name are versions with CTF correction (only sign flipping of spectral components, without inversion for negative defocus). These separate scripts require more information on the settings.
+A 3D shadow montage can be also generated as a 3D cone-beam backprojection (using Astra Toolbox), which  is demonstrated in cone_rec3d.m. For processing prz file we convert them to hdf5.  <br>
+The scripts with CTF in the name are versions with CTF correction (only sign flipping of spectral components, without inversion for negative defocus). These separate scripts require more information on the settings.<br>
 
-Installation in Matlab: Requires a modified MatTomo @MRCImage library (https://github.com/Pr4Et/Supplementaries/tree/main/Analysis_4DSTEM_tiltseries/MatTomo) (based on PEET project: https://bio3d.colorado.edu/imod/matlab.html).
-Requires hdf5 libraries from https://www.hdfgroup.org/download-hdf5/.
-For versions of Matlab above 2024 use the supplied uigetfile.m.
-Running exe files in Windows: The executable software requires only Matlab runtime of 2024a version installed on Windows (see executables folder).
+Installation in Matlab: Requires a modified MatTomo @MRCImage library (https://github.com/Pr4Et/Supplementaries/tree/main/Analysis_4DSTEM_tiltseries/MatTomo) (based on PEET project: https://bio3d.colorado.edu/imod/matlab.html).<br>
+Requires hdf5 libraries from https://www.hdfgroup.org/download-hdf5/.<br>
+For versions of Matlab above 2024 use the supplied uigetfile.m.<br>
+Running exe files in Windows: The executable software requires only Matlab runtime of 2024a version installed on Windows (see executables folder).<br>
 
 Updates
 
-ShadowMontage_tiltseries_ver2.m  - Use modified CTF correction in overfocus to prevent mixed contrast contributions between the shadow overall illumination and the shadow patterns.
-shadowMontage_tiltseries_3d.m - back to the original scheme of 3dmontage generation, now more accurate
+ShadowMontage_tiltseries_ver2.m  - Use modified CTF correction in overfocus to prevent mixed contrast contributions between the shadow overall illumination and the shadow patterns. <br>
+shadowMontage_tiltseries_3d.m - back to the original scheme of 3dmontage generation, now more accurate. <br>
+
+An easy to use package that performs a complete tomogram workflow is found in: https://github.com/elbaum-lab/shadow-package/tree/main <br>
